@@ -56,11 +56,6 @@ int time_to_display_clock = 3;
 
 // Array of all bitmaps for convenience. (Total bytes used to store images in PROGMEM = 1040)
 void draw_animation(unsigned int duration, bool gif=false){
-    if(!gif){
-        display.drawBitmap(0, 0, bitmap, 128, 64, WHITE);
-        display.display();
-    }
-    else{
         int start = millis();
         bool flag=true;
         while(millis()-start < duration){
@@ -75,7 +70,7 @@ void draw_animation(unsigned int duration, bool gif=false){
             delay(300);
             display.clearDisplay();
         }
-    }
+    
 }
 void setup()
 {
@@ -100,9 +95,9 @@ void setup()
 
 
     display.clearDisplay();
-    display.setCursor(0, 0);
+    display.setCursor(0, 0);    
     // delay(1000);
-    draw_animation(3000,true);
+    draw_animation(3000);
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(WHITE);

@@ -1,14 +1,20 @@
 
+// Nara Atthama
+// nara.atthama-2020@ftmm.unair.ac.id
+// 2023
+// reference :
+// RTC API : https://adafruit.github.io/RTClib/html/index.html
+// SSD1306 OLED API : http://adafruit.github.io/Adafruit_SSD1306/html/index.html
+// DHT for ESP API : https://github.com/beegee-tokyo/DHTesp
 
 #include "RTClib.h"
-#include "images.h"
+#include "images.h" // needed to display image on booting screen XD
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <DHTesp.h>
 #include <Wire.h>
 #include <driver/gpio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#include <freertos/FreeRTOS.h> // free RTOS on ESP32
 
 // Pin Definitions
 #define DHTPIN 14             // Pin connected to DHT sensor
@@ -18,15 +24,12 @@
 #define GREEN_LED_PIN 15      // Pin connected to the green LED
 
 // RTC
-// reference RTC API : https://adafruit.github.io/RTClib/html/index.html
 RTC_DS1307 rtc;
 
 // OLED display configuration
-// reference SSD1306 OLED API : http://adafruit.github.io/Adafruit_SSD1306/html/index.html
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 // DHT sensor
-// reference DHT for ESP API : https://github.com/beegee-tokyo/DHTesp
 DHTesp dht;
 
 // Task handles
@@ -53,33 +56,25 @@ DisplayMode currentDisplayMode = DISPLAY_MODE_TEMP_HUM;
 TempAndHumidity data;
 int time_to_display_clock = 3;
 
-// Array of all bitmaps for convenience. (Total bytes used to store images in PROGMEM = 1040)
-void draw_animation(unsigned int duration, bool gif = false)
+void draw_animation(unsigned int duration)
 {
-    if (!gif)
+    int start = millis();
+    bool flag = true;
+    while (millis() - start < duration)
     {
-        display.drawBitmap(0, 0, bitmap, 128, 64, WHITE);
-        display.display();
-    }
-    else
-    {
-        int start = millis();
-        bool flag = true;
-        while (millis() - start < duration)
+        if (flag)
         {
-            if (flag)
-            {
-                display.drawBitmap(0, 0, bitmap1, 128, 64, WHITE);
-            }
-            else
-            {
-                display.drawBitmap(0, 0, bitmap2, 128, 64, WHITE);
-            }
-            display.display();
-            flag = !flag;
-            delay(300);
-            display.clearDisplay();
+            display.drawBitmap(0, 0, bitmap1, 128, 64, WHITE);
         }
+        else
+        {
+            display.drawBitmap(0, 0, bitmap2, 128, 64, WHITE);
+        }
+        display.display();
+        flag = !flag;
+        delay(300);
+        display.clearDisplay();
+    
     }
 }
 void setup()
@@ -103,9 +98,6 @@ void setup()
         // When time needs to be set on a new device, or after a power loss, the
         // following line sets the RTC to the date & time this sketch was compiled
         rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-        // This line sets the RTC with an explicit date & time, for example to set
-        // January 21, 2014 at 3am you would call:
-        // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
     }
 
     // Initialize the button pin
@@ -118,44 +110,46 @@ void setup()
     // Create a binary semaphore for the button press
     buttonSemaphore = xSemaphoreCreateBinary();
 
-    // Initialize the display
+    // Initialize the display (type, I2C address)
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 
     display.clearDisplay();
     display.setCursor(0, 0);
-    // delay(1000);
-    draw_animation(3000, true);
+    // boot animation XD
+    draw_animation(3000);
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(WHITE);
     display.setCursor(0, 0);
 
-    // Create tasks
+    // Create tasks for temperature and humidity reading
     xTaskCreate(temperatureTask, "TemperatureTask", 10000, NULL, 1, &temperatureTaskHandle);
+    // Create a task for displaying the temperature and humidity or the clock
     xTaskCreate(displayTask, "DisplayTask", 10000, NULL, 1, &displayTaskHandle);
+
 }
 
 void loop()
 {
-
     // Check if the button is pressed
     if (digitalRead(BUTTON_PIN) == LOW)
     {
         // Take the semaphore to signal button press
-        Serial.println("Button pressed");
+        // Serial.println("Button pressed");
         xSemaphoreGive(buttonSemaphore);
     }
-
-    delay(10);
+    delay(10); // 10 ms delay to debounce the button
 }
 
 void temperatureTask(void *parameter)
 {
+    // Loop forever
     for (;;)
     {
+        // Read the temperature and humidity
         data = dht.getTempAndHumidity();
-
-        // Toggle the LED states
+        // Toggle the LED states based on the temperature 
+        // to simulate AC control automatically
         if (data.temperature > 33)
         {
             redLedState = true;
@@ -164,6 +158,8 @@ void temperatureTask(void *parameter)
         {
             redLedState = false;
         }
+
+        // just blinking the green led everytime sensor update
         greenLedState = !greenLedState;
 
         // Update the LED states
@@ -177,6 +173,7 @@ void temperatureTask(void *parameter)
 
 void displayTask(void *parameter)
 {
+    // Loop forever
     for (;;)
     {
         // Check if the button is pressed
@@ -187,6 +184,7 @@ void displayTask(void *parameter)
         }
         else
         {
+            // Switch to displaying the temperature and humidity
             currentDisplayMode = DISPLAY_MODE_TEMP_HUM;
         }
 
@@ -221,13 +219,8 @@ void displayTask(void *parameter)
 
                 // update time
                 time = rtc.now();
-                // uncomment untuk debugging, print pada serial monitor
-                // Serial.println("start : " + String(start));
-                // Serial.println(time.second()-start);
             }
         }
-        // Other display tasks or data updates
-
         vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
