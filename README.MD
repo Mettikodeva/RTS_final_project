@@ -4,7 +4,7 @@
 3. Pilih project environment dibawah<br>
     - env:esp32dev_RTC_Clock 
     - env:esp32dev_NTP_Clock 
-4. Ubah default_envs pada platformio.ini atay klik ini pada bagian bawah vscode ![Alt text](image.png) 
+4. Ubah default_envs pada platformio.ini atay klik ini pada bagian bawah vscode ![Alt text](env.png) 
 4. Klik ctrl+shift+p lalu ketik platformio build atau klik ![Alt text](image.png) 
 5. Jika berhasil akan muncul file firmware.bin dan firmware.elf pada folder .pio/build/\<env\>/
 
