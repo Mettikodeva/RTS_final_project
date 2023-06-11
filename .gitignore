@@ -11,3 +11,6 @@ giphy.bmp
 *.zip
 diagram.json
 wokwi.toml
+
+!env.png
+!image.png
